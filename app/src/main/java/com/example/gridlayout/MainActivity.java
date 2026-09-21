@@ -12,6 +12,9 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
+import android.util.Log;
+import java.util.Random;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int COLUMN_COUNT = 2;
@@ -81,6 +84,8 @@ public class MainActivity extends AppCompatActivity {
 
                 cell_tvs.add(tv);
             }
+            initializeBoard();
+            logBoard();
         }
 
         // Method (3): add four dynamically created cells with LayoutInflater
@@ -125,6 +130,57 @@ public class MainActivity extends AppCompatActivity {
         }else {
             tv.setTextColor(Color.GRAY);
             tv.setBackgroundColor(Color.LTGRAY);
+        }
+    }
+
+    private static final int GRID_SIZE = 10;
+    private static final int MINE_COUNT = 6;
+    private static final String TAG = "Minesweeper";
+
+    private Cell[][] board = new Cell[GRID_SIZE][GRID_SIZE];
+
+    private void initializeBoard() {
+        for (int r = 0; r < GRID_SIZE; r++)
+            for (int c = 0; c < GRID_SIZE; c++)
+                board[r][c] = new Cell();
+
+        Random rand = new Random();
+        int placed = 0;
+        while (placed < MINE_COUNT) {
+            int r = rand.nextInt(GRID_SIZE);
+            int c = rand.nextInt(GRID_SIZE);
+            if (!board[r][c].isMine) {
+                board[r][c].isMine = true;
+                placed++;
+            }
+        }
+
+        for (int r = 0; r < GRID_SIZE; r++)
+            for (int c = 0; c < GRID_SIZE; c++)
+                if (!board[r][c].isMine)
+                    board[r][c].adjacentMines = countAdjacentMines(r, c);
+    }
+
+    private int countAdjacentMines(int row, int col) {
+        int count = 0;
+        for (int dr = -1; dr <= 1; dr++) {
+            for (int dc = -1; dc <= 1; dc++) {
+                if (dr == 0 && dc == 0) continue;
+                int nr = row + dr, nc = col + dc;
+                if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && board[nr][nc].isMine)
+                    count++;
+            }
+        }
+        return count;
+    }
+
+    private void logBoard() {
+        for (int r = 0; r < GRID_SIZE; r++) {
+            StringBuilder row = new StringBuilder();
+            for (int c = 0; c < GRID_SIZE; c++) {
+                row.append(board[r][c].isMine ? "M" : board[r][c].adjacentMines).append(" ");
+            }
+            Log.d(TAG, row.toString());
         }
     }
 }
