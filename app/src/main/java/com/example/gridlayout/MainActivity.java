@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import java.util.Random;
 import android.os.Handler;
+import android.content.Intent;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -156,10 +157,18 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Mode switched to: " + (isDigMode ? "DIG" : "FLAG"));
     }
 
+    private void navigateToResult() {
+        Intent intent = new Intent(MainActivity.this, ResultActivity.class);
+        intent.putExtra("seconds", secondsElapsed);
+        intent.putExtra("won", gameWon);
+        startActivity(intent);
+        finish();
+    }
+
     private void onCellClick(int row, int col) {
 
         if (gameOver) {
-            Log.d(TAG, "Game already over (" + (gameWon ? "WON" : "LOST") + ") — would navigate to result page here.");
+            navigateToResult();
             return;
         }
 
