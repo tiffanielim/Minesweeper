@@ -16,6 +16,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int GRID_SIZE = 10;
     private static final int MINE_COUNT = 6;
     private static final String TAG = "Minesweeper";
+    private boolean gameOver = false;
+    private boolean gameWon = false;
 
     private Cell[][] board = new Cell[GRID_SIZE][GRID_SIZE];
     private TextView[][] cellViews = new TextView[GRID_SIZE][GRID_SIZE];
@@ -120,13 +122,18 @@ public class MainActivity extends AppCompatActivity {
         updateCellUI(row, col);
         Log.d(TAG, "Revealed (" + row + "," + col + ") - mine=" + cell.isMine + " adjacent=" + cell.adjacentMines);
 
-        if (cell.isMine) return;
+        if (cell.isMine) {
+            endGame(false);
+            return;
+        }
 
         if (cell.adjacentMines == 0) {
             for (int dr = -1; dr <= 1; dr++)
                 for (int dc = -1; dc <= 1; dc++)
                     if (dr != 0 || dc != 0) revealCell(row + dr, col + dc);
         }
+
+        checkWinCondition();
     }
 
     private void toggleMode() {
@@ -136,6 +143,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onCellClick(int row, int col) {
+
+        if (gameOver) {
+            Log.d(TAG, "Game already over (" + (gameWon ? "WON" : "LOST") + ") — would navigate to result page here.");
+            return;
+        }
+
         Cell cell = board[row][col];
 
         if (isDigMode) {
@@ -151,6 +164,30 @@ public class MainActivity extends AppCompatActivity {
             mineCountTv.setText("🚩 " + minesRemaining);
             updateCellUI(row, col);
             Log.d(TAG, "Flag toggled at (" + row + "," + col + ") - remaining=" + minesRemaining);
+        }
+    }
+
+    private void checkWinCondition() {
+        for (int r = 0; r < GRID_SIZE; r++)
+            for (int c = 0; c < GRID_SIZE; c++)
+                if (!board[r][c].isMine && !board[r][c].isRevealed) return;
+        endGame(true);
+    }
+
+    private void endGame(boolean won) {
+        if (gameOver) return;
+        gameOver = true;
+        gameWon = won;
+        Log.d(TAG, "GAME OVER — result: " + (won ? "WON" : "LOST"));
+        revealAllCells();
+    }
+
+    private void revealAllCells() {
+        for (int r = 0; r < GRID_SIZE; r++) {
+            for (int c = 0; c < GRID_SIZE; c++) {
+                board[r][c].isRevealed = true;
+                updateCellUI(r, c);
+            }
         }
     }
 
