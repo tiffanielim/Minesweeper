@@ -83,8 +83,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // TEMPORARY: reveals everything so I can check grid lines up with the
-    // Logcat output. Will replace w real dig/flag logic
+    private boolean isDigMode = true;
+    private int minesRemaining = MINE_COUNT;
+
     private void buildGridUI() {
         GridLayout grid = findViewById(R.id.gridLayout01);
         LayoutInflater li = LayoutInflater.from(this);
@@ -92,15 +93,10 @@ public class MainActivity extends AppCompatActivity {
         for (int r = 0; r < GRID_SIZE; r++) {
             for (int c = 0; c < GRID_SIZE; c++) {
                 TextView tv = (TextView) li.inflate(R.layout.custom_cell_layout, grid, false);
+                tv.setBackgroundColor(Color.GRAY);
 
-                Cell cell = board[r][c];
-                if (cell.isMine) {
-                    tv.setText("M");
-                    tv.setBackgroundColor(Color.parseColor("#FF6666"));
-                } else {
-                    tv.setText(String.valueOf(cell.adjacentMines));
-                    tv.setBackgroundColor(Color.LTGRAY);
-                }
+                final int row = r, col = c;
+                tv.setOnClickListener(v -> onCellClick(row, col));
 
                 GridLayout.LayoutParams lp = (GridLayout.LayoutParams) tv.getLayoutParams();
                 lp.rowSpec = GridLayout.spec(r);
@@ -109,6 +105,78 @@ public class MainActivity extends AppCompatActivity {
                 grid.addView(tv, lp);
                 cellViews[r][c] = tv;
             }
+        }
+
+        mineCountTv.setText("🚩 " + minesRemaining);
+        modeIconTv.setOnClickListener(v -> toggleMode());
+    }
+
+    private void revealCell(int row, int col) {
+        if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) return;
+        Cell cell = board[row][col];
+        if (cell.isRevealed || cell.isFlagged) return;
+
+        cell.isRevealed = true;
+        updateCellUI(row, col);
+        Log.d(TAG, "Revealed (" + row + "," + col + ") - mine=" + cell.isMine + " adjacent=" + cell.adjacentMines);
+
+        if (cell.isMine) return;
+
+        if (cell.adjacentMines == 0) {
+            for (int dr = -1; dr <= 1; dr++)
+                for (int dc = -1; dc <= 1; dc++)
+                    if (dr != 0 || dc != 0) revealCell(row + dr, col + dc);
+        }
+    }
+
+    private void toggleMode() {
+        isDigMode = !isDigMode;
+        modeIconTv.setText(isDigMode ? "⛏️" : "🚩");
+        Log.d(TAG, "Mode switched to: " + (isDigMode ? "DIG" : "FLAG"));
+    }
+
+    private void onCellClick(int row, int col) {
+        Cell cell = board[row][col];
+
+        if (isDigMode) {
+            if (cell.isFlagged) {
+                Log.d(TAG, "Blocked: cannot dig a flagged cell at (" + row + "," + col + ")");
+                return;
+            }
+            revealCell(row, col);
+        } else {
+            if (cell.isRevealed) return;
+            cell.isFlagged = !cell.isFlagged;
+            minesRemaining += cell.isFlagged ? -1 : 1;
+            mineCountTv.setText("🚩 " + minesRemaining);
+            updateCellUI(row, col);
+            Log.d(TAG, "Flag toggled at (" + row + "," + col + ") - remaining=" + minesRemaining);
+        }
+    }
+
+    private void updateCellUI(int row, int col) {
+        Cell cell = board[row][col];
+        TextView tv = cellViews[row][col];
+
+        if (cell.isFlagged && !cell.isRevealed) {
+            tv.setText("🚩");
+            tv.setBackgroundColor(Color.LTGRAY);
+            return;
+        }
+        if (!cell.isRevealed) {
+            tv.setText("");
+            tv.setBackgroundColor(Color.GRAY);
+            return;
+        }
+        if (cell.isMine) {
+            tv.setText("💣");
+            tv.setBackgroundColor(Color.parseColor("#FF6666"));
+        } else if (cell.adjacentMines > 0) {
+            tv.setText(String.valueOf(cell.adjacentMines));
+            tv.setBackgroundColor(Color.parseColor("#DDDDDD"));
+        } else {
+            tv.setText("");
+            tv.setBackgroundColor(Color.parseColor("#DDDDDD"));
         }
     }
 }
