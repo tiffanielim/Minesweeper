@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.widget.TextView;
 
 import java.util.Random;
+import android.os.Handler;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -88,6 +89,19 @@ public class MainActivity extends AppCompatActivity {
     private boolean isDigMode = true;
     private int minesRemaining = MINE_COUNT;
 
+    private boolean timerStarted = false;
+    private int secondsElapsed = 0;
+
+    private final Handler timerHandler = new Handler();
+    private final Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            secondsElapsed++;
+            timerTv.setText("⏱ " + secondsElapsed);
+            timerHandler.postDelayed(this, 1000);
+        }
+    };
+
     private void buildGridUI() {
         GridLayout grid = findViewById(R.id.gridLayout01);
         LayoutInflater li = LayoutInflater.from(this);
@@ -149,6 +163,11 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        if (!timerStarted) {
+            timerStarted = true;
+            timerHandler.postDelayed(timerRunnable, 1000);
+        }
+
         Cell cell = board[row][col];
 
         if (isDigMode) {
@@ -176,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void endGame(boolean won) {
         if (gameOver) return;
+        timerHandler.removeCallbacks(timerRunnable);
         gameOver = true;
         gameWon = won;
         Log.d(TAG, "GAME OVER — result: " + (won ? "WON" : "LOST"));
